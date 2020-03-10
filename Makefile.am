@@ -9,4 +9,4 @@ libgstchecksumsink_la_LIBADD = \
         $(GST_VIDEO_LIBS) \
         $(NULL)
 
-libdir = ${exec_prefix}/lib/gstreamer-1.0
+libdir = $(shell pkg-config --variable=libdir gstreamer-1.0)/gstreamer-1.0
