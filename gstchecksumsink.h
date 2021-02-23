@@ -47,6 +47,7 @@ struct _GstCksumImageSink
   gboolean frame_checksum;
   gboolean plane_checksum;
   gboolean dump_output;
+  gint eos_after;
 
   gchar *raw_file_name;
   gint fd;

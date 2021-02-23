@@ -52,7 +52,8 @@ enum
   PROP_FRAME_CHECKSUM,
   PROP_PLANE_CHECKSUM,
   PROP_RAW_OUTPUT,
-  PROP_RAW_LOCATION
+  PROP_RAW_LOCATION,
+  PROP_EOS_AFTER
 };
 
 static GstStaticPadTemplate gst_cksum_image_sink_sink_template =
@@ -154,6 +155,10 @@ gst_cksum_image_sink_class_init (GstCksumImageSinkClass * klass)
           "Location of the file to write decoded raw frames",
           NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
+  g_object_class_install_property (gobject_class, PROP_EOS_AFTER,
+      g_param_spec_int ("eos-after", "EOS After", "EOS after N buffers",
+          -1, G_MAXINT, -1, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
   gst_element_class_add_pad_template (element_class,
       gst_static_pad_template_get (&gst_cksum_image_sink_sink_template));
 
@@ -170,6 +175,7 @@ gst_cksum_image_sink_init (GstCksumImageSink * checksumsink)
   checksumsink->hash = G_CHECKSUM_MD5;
   checksumsink->frame_checksum = TRUE;
   checksumsink->fd = -1;
+  checksumsink->eos_after = -1;
 }
 
 static void
@@ -196,6 +202,9 @@ gst_cksum_image_sink_set_property (GObject * object, guint prop_id,
       break;
     case PROP_RAW_LOCATION:
       checksumsink->raw_file_name = g_strdup (g_value_get_string (value));
+      break;
+    case PROP_EOS_AFTER:
+      checksumsink->eos_after = g_value_get_int (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -227,6 +236,9 @@ gst_cksum_image_sink_get_property (GObject * object, guint prop_id,
       break;
     case PROP_RAW_LOCATION:
       g_value_set_string (value, checksumsink->raw_file_name);
+      break;
+    case PROP_EOS_AFTER:
+      g_value_set_int (value, checksumsink->eos_after);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -395,6 +407,13 @@ gst_cksum_image_sink_render (GstBaseSink * sink, GstBuffer * buffer)
   GstVideoInfo *vinfo;
   guint8 *data;
   gsize size;
+
+  if (checksumsink->eos_after == 0) {
+    GST_DEBUG_OBJECT (checksumsink, "Force EOS as requested");
+    return GST_FLOW_EOS;
+  } else if (checksumsink->eos_after > 0) {
+    checksumsink->eos_after--;
+  }
 
   vinfo = &checksumsink->vinfo;
   if (!gst_video_frame_map (&frame, vinfo, buffer, GST_MAP_READ)) {
