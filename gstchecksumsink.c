@@ -25,9 +25,14 @@
 #include <fcntl.h>
 #include <glib/gstdio.h>
 #include <string.h>
+#ifndef _WIN32
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#else
+#include <Windows.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 #include "gstchecksumsink.h"
 
@@ -258,7 +263,11 @@ open_raw_file (GstCksumImageSink * checksumsink)
     return TRUE;
   else if (checksumsink->raw_file_name)
     checksumsink->fd = g_open (checksumsink->raw_file_name, O_WRONLY | O_CREAT,
+#ifndef _WIN32
         S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+#else
+        0);
+#endif
   else
     checksumsink->fd =
         g_file_open_tmp ("tmp_XXXXXX.yuv", &checksumsink->raw_file_name, &err);
@@ -339,8 +348,13 @@ gst_cksum_image_sink_stop (GstBaseSink * sink)
   GstCksumImageSink *checksumsink = GST_CKSUM_IMAGE_SINK (sink);
 
   if (checksumsink->fd != -1) {
+  #ifndef _WIN32
     fsync (checksumsink->fd);
-    close (checksumsink->fd);
+  #else
+    HANDLE h = (HANDLE) _get_osfhandle (checksumsink->fd);
+    FlushFileBuffers(h);
+  #endif
+    close(checksumsink->fd);
   }
 
   checksum_raw_file (checksumsink);
@@ -435,7 +449,7 @@ gst_cksum_image_sink_render (GstBaseSink * sink, GstBuffer * buffer)
     n_planes = GST_VIDEO_FRAME_N_PLANES (&frame);
 
     for (plane = 0; plane < n_planes; plane++) {
-      gpointer pd = GST_VIDEO_FRAME_PLANE_DATA (&frame, plane);
+      guint8 *pd = (guint8 *)GST_VIDEO_FRAME_PLANE_DATA (&frame, plane);
 
       /* FIXME: assumes subsampling of component N is the same as
        * plane N, which is currently true for all formats we have but

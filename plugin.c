@@ -27,7 +27,7 @@ plugin_init (GstPlugin * plugin)
       GST_RANK_NONE, GST_TYPE_CKSUM_IMAGE_SINK);
 }
 
-GstPluginDesc gst_plugin_desc = {
+GST_PLUGIN_EXPORT GstPluginDesc gst_plugin_desc = {
   .major_version = GST_VERSION_MAJOR,
   .minor_version = GST_VERSION_MINOR,
   .name = "libgstchecksumsink",
