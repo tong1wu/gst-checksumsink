@@ -262,11 +262,11 @@ open_raw_file (GstCksumImageSink * checksumsink)
   if (checksumsink->fd != -1)
     return TRUE;
   else if (checksumsink->raw_file_name)
-    checksumsink->fd = g_open (checksumsink->raw_file_name, O_WRONLY | O_CREAT,
 #ifndef _WIN32
+    checksumsink->fd = g_open (checksumsink->raw_file_name, O_WRONLY | O_CREAT,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 #else
-        0);
+    checksumsink->fd = g_open (checksumsink->raw_file_name, O_WRONLY | O_CREAT | O_BINARY, 0);
 #endif
   else
     checksumsink->fd =
