@@ -435,6 +435,13 @@ gst_cksum_image_sink_render (GstBaseSink * sink, GstBuffer * buffer)
     return GST_FLOW_ERROR;
   }
 
+#ifdef _WIN32
+  /* gst_video_frame_map will update to aligned width and height,
+     we need to update again to the original width and height */
+  frame.info.width = vinfo->width;
+  frame.info.height = vinfo->height;
+#endif
+
   if (!(data = alloc_data (checksumsink, GST_VIDEO_FRAME_SIZE (&frame)))) {
     GST_ERROR_OBJECT (checksumsink, "failed to allocate buffer");
     return GST_FLOW_ERROR;
